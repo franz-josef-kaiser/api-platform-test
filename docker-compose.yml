@@ -8,8 +8,8 @@ services:
     depends_on:
       - database
     restart: unless-stopped
-#    volumes:
-#      - php_socket:/var/run/php
+    volumes:
+      - php_socket:/php-socket
     healthcheck:
       interval: 10s
       timeout: 3s
@@ -19,7 +19,9 @@ services:
   nginx:
     image: "nginx:1.14-alpine"
     restart: on-failure
-    working_dir: /srv/api
+    working_dir: /srv/apie
+    depends_on:
+      - php
     ports:
       - "80:80"
       - "443:443"
@@ -32,6 +34,7 @@ services:
       # Cert and key: Auto-symlink to /etc/ssl/certs
       # - cert-storage:/usr/local/share/ca-certificates
       - ${PWD}/api:/srv/api
+      - php_socket:/php-socket
     tmpfs:
       - /run
       - /tmp
@@ -87,5 +90,5 @@ services:
       # - ./api/docker/db/data:/var/lib/postgresql/data:rw
 
 volumes:
-#  php_socket:
+  php_socket:
   db_data:
