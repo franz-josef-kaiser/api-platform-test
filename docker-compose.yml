@@ -16,44 +16,64 @@ services:
       retries: 3
       start_period: 30s
 
-  pwa:
-    build:
-      context: ./pwa
-      target: api_platform_pwa_prod
-    environment:
-      API_PLATFORM_CLIENT_GENERATOR_ENTRYPOINT: http://caddy
-      NEXT_PUBLIC_ENTRYPOINT: http://caddy
-
-  caddy:
-    build:
-      context: api/
-      target: api_platform_caddy
-    depends_on:
-      - php
-      - pwa
-    environment:
-      PWA_UPSTREAM: pwa:3000
-      SERVER_NAME: ${SERVER_NAME:-localhost, caddy:80}
-      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeMe!}
-      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeMe!}
-    restart: unless-stopped
-    volumes:
-      - php_socket:/var/run/php
-      - caddy_data:/data
-      - caddy_config:/config
+  nginx:
+    image: "nginx:1.14-alpine"
+    restart: on-failure
+    working_dir: /srv/api
     ports:
-      # HTTP
-      - target: 80
-        published: 80
-        protocol: tcp
-      # HTTPS
-      - target: 443
-        published: 443
-        protocol: tcp
-      # HTTP/3
-      - target: 443
-        published: 443
-        protocol: udp
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Align host and container timezone
+      - /etc/localtime:/etc/localtime:ro
+      # Nginx server conf
+      - ${PWD}/nginx:/etc/nginx:ro
+      # Dev Root cert CA
+      # Cert and key: Auto-symlink to /etc/ssl/certs
+      # - cert-storage:/usr/local/share/ca-certificates
+      - ${PWD}/api:/srv/api
+    tmpfs:
+      - /run
+      - /tmp
+
+#  pwa:
+#    build:
+#      context: ./pwa
+#      target: api_platform_pwa_prod
+#    environment:
+#      API_PLATFORM_CLIENT_GENERATOR_ENTRYPOINT: http://caddy
+#      NEXT_PUBLIC_ENTRYPOINT: http://caddy
+
+#  caddy:
+#    build:
+#      context: api/
+#      target: api_platform_caddy
+#    depends_on:
+#      - php
+#      - pwa
+#    environment:
+#      PWA_UPSTREAM: pwa:3000
+#      SERVER_NAME: ${SERVER_NAME:-localhost, caddy:80}
+#      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeMe!}
+#      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeMe!}
+#    restart: unless-stopped
+#    volumes:
+#      - php_socket:/var/run/php
+#      - caddy_data:/data
+#      - caddy_config:/config
+#    ports:
+#      # HTTP
+#      - target: 80
+#        published: 80
+#        protocol: tcp
+#      # HTTPS
+#      - target: 443
+#        published: 443
+#        protocol: tcp
+#      # HTTP/3
+#      - target: 443
+#        published: 443
+#        protocol: udp
 
   database:
     image: postgres:13-alpine
@@ -69,5 +89,3 @@ services:
 volumes:
   php_socket:
   db_data:
-  caddy_data:
-  caddy_config:
