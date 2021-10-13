@@ -8,8 +8,8 @@ services:
     depends_on:
       - database
     restart: unless-stopped
-    volumes:
-      - php_socket:/var/run/php
+#    volumes:
+#      - php_socket:/var/run/php
     healthcheck:
       interval: 10s
       timeout: 3s
@@ -87,5 +87,5 @@ services:
       # - ./api/docker/db/data:/var/lib/postgresql/data:rw
 
 volumes:
-  php_socket:
+#  php_socket:
   db_data:
